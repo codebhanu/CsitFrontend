@@ -1,75 +1,98 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+'use client';
 
-export default function RegisterPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const router = useRouter()
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import Link from 'next/link';
+import { API_BASE_URL } from '../utils/auth';
 
-  const handleRegister = async (e) => {
-    e.preventDefault()
+export default function Register() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
     if (password !== confirmPassword) {
-      alert('Passwords do not match')
-      return
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
     }
 
     try {
-      const formData = new URLSearchParams()
-      formData.append('email', email)
-      formData.append('password', password)
+      await axios.post(`${API_BASE_URL}/register`, {
+        email,
+        password,
+      });
 
-      const res = await fetch('http://127.0.0.1:8000/register', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!res.ok) {
-        alert('Registration failed')
-        return
-      }
-
-      alert('Registration successful! Please login.')
-      router.push('/login')
+      router.push('/login?message=Registration successful! Please log in.');
     } catch (err) {
-      console.error(err)
-      alert('Something went wrong')
+      setError(err.response?.data?.detail || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-50">
-      <form onSubmit={handleRegister} className="flex flex-col gap-4 w-96 p-6 bg-white rounded shadow">
-        <h1 className="text-2xl font-bold text-center">Register for Mentora</h1>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-          Register
+    <div className="auth-container">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <h1>Join Mentora</h1>
+        
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirm Password</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
+
+        <button type="submit" className="btn" disabled={loading}>
+          {loading ? 'Creating account...' : 'Register'}
         </button>
+
+        <div className="auth-link">
+          Already have an account? <Link href="/login">Login here</Link>
+        </div>
       </form>
     </div>
-  )
+  );
 }

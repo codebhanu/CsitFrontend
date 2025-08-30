@@ -1,14 +1,22 @@
-'use client'
-import Link from 'next/link'
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { removeToken } from '../utils/auth';
 
 export default function Navbar() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    removeToken();
+    router.push('/login');
+  };
+
   return (
-    <nav className="bg-blue-600 text-white p-4 flex justify-between">
-      <div className="text-xl font-bold">Mentora</div>
-      <div className="flex gap-4">
-        <Link href="/login" className="hover:underline">Login</Link>
-        <Link href="/register" className="hover:underline">Register</Link>
-      </div>
+    <nav className="navbar">
+      <h1>Mentora</h1>
+      <button onClick={handleLogout}>
+        Logout
+      </button>
     </nav>
-  )
+  );
 }

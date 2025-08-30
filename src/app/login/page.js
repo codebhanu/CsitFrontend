@@ -1,73 +1,84 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+'use client';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const router = useRouter()
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import Link from 'next/link';
+import { setToken, API_BASE_URL } from '../utils/auth';
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
-      const formData = new URLSearchParams()
-      formData.append('email', email)
-      formData.append('password', password)
+      const formData = new FormData();
+      formData.append('username', email); // FastAPI OAuth2PasswordRequestForm expects 'username'
+      formData.append('password', password);
 
-      const res = await fetch('http://127.0.0.1:8000/login', {
-        method: 'POST',
-        body: formData,
-      })
+      const response = await axios.post(`${API_BASE_URL}/login`, formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
 
-      if (!res.ok) {
-        alert('Login failed')
-        return
-      }
-
-      const data = await res.json()
-      // Save token in localStorage
-      localStorage.setItem('access_token', data.access_token)
-
-      // Redirect to chat page
-      router.push('/chat')
+      setToken(response.data.access_token);
+      router.push('/chat');
     } catch (err) {
-      console.error(err)
-      alert('Something went wrong')
+      setError(err.response?.data?.detail || 'Login failed');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-50">
-      <form onSubmit={handleLogin} className="flex flex-col gap-4 w-96 p-6 bg-white rounded shadow">
-        <h1 className="text-2xl font-bold text-center">Login to Mentora</h1>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-          Login
+    <div className="auth-container">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <h1>Login to Mentora</h1>
+        
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button type="submit" className="btn" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
         </button>
-        <button
-          type="button"
-          className="bg-red-600 text-white p-2 rounded hover:bg-red-700"
-          onClick={() => alert('Coming soon!')}
-        >
-          Sign in with Google
-        </button>
+
+        <div className="auth-link">
+          Don't have an account? <Link href="/register">Register here</Link>
+        </div>
       </form>
     </div>
-  )
+  );
 }
